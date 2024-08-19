@@ -1,0 +1,91 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch: # Allow manual runs to manually define releases
+    inputs:
+      version:
+        description: 'The version string for the upload'
+        required: true
+  
+
+env:
+  GO_VERSION: "1.22"
+
+jobs:
+  release-ui:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Setup Golang
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    - name: Clean and create release directory
+      run: rm -rf ./artifacts && mkdir -p artifacts
+    - name: Build for all OS and architecture combinations using tag # When triggered by a release.
+      # Fake this for now.
+      run: |
+        mkdir -p ./artifacts
+        echo "yo" > "./artifacts/test-item-${{ github.event.inputs.version }}.txt"
+
+    - name: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
+        service_account: "${{ vars.GCP_SERVICE_ACCOUNT }}"
+
+    # TODO: you want to update this to use the new code that will be used to manage the version manifest.
+    #- name: Pull the versions text file from GCP
+    #  run: | 
+    #    curl --fail-with-body -o versions.txt -s 'https://molt.cockroachdb.com/molt/cli/versions.txt' || cp ./climanifest/base-versions.txt versions.txt
+    #- name: Write the versions text file with updated binary links
+    #  # We want to clean the replicator.tgz if it exists.
+    #  # rm -f doesn't return an error if it doesn't exist; works for our use case.
+    #  run: |
+    #    rm -f ./artifacts/replicator.tgz
+    #    echo "" >> ./versions.txt
+    #    echo "" >> ./versions.txt
+    #    for i in $(ls artifacts); do 
+    #      if [[ ! $i == *"latest"* ]]; then
+    #        echo "${{ vars.BUCKET_URL }}/molt/cli/$i" >> ./versions.txt
+    #      fi
+    #    done
+    #    cp versions.txt ./artifacts/versions.txt
+    #    cat ./artifacts/versions.txt
+
+    # TODO: write something new for this
+    #- name: Generate the manifest
+    #  if: ${{ github.event_name == 'release' }}
+    #  run: go run ./climanifest --version-file ./artifacts/versions.txt --output-file ./artifacts/versions.html --template-file "./climanifest/climanifestHtml.tmpl" --title "MOLT Tools CLI Versions"
+    - name: Upload binaries and manifest to GCP bucket
+      id: 'upload-binaries'
+      uses: google-github-actions/upload-cloud-storage@v1
+      with:
+        path: 'artifacts'
+        destination: '${{ vars.GCS_BUCKET }}/ui/'
+        parent: false
+        headers: |-
+            cache-control:public, max-age=60 
+    - name: Output links
+      run: |
+        echo "CLI Binaries" >> $GITHUB_STEP_SUMMARY
+        for i in $(ls artifacts); do 
+          echo "${{ vars.BUCKET_URL }}/molt/cli/$i" >> $GITHUB_STEP_SUMMARY
+        done
+    # Needed for invalidate step.
+    #- name: 'Set up Google Cloud SDK'
+    #  uses: 'google-github-actions/setup-gcloud@v1'
+
+    # TODO: add back later.
+    #- name: Invalidate CDN cache
+    #  run: |
+    #    gcloud compute url-maps invalidate-cdn-cache molt-lms-release-artifacts-prod-default --path "/molt/cli/*" --async
