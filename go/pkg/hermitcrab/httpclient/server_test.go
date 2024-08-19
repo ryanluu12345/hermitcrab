@@ -23,7 +23,7 @@ func TestServeLatestVersion(t *testing.T) {
 	mockBM := bucket.NewMockBucketManager(ctrl)
 	server := NewTestServer(t, WithBucketManager(mockBM))
 
-	latestVersion, err := version.ParseVersion("24.1.0-ui.1")
+	latestVersion, err := version.ParseVersion("24.1.0+ui.1")
 	require.NoError(t, err)
 
 	mockBM.EXPECT().GetLatestPatchVersion(gomock.Any(), "24.1").Return(latestVersion, nil)
@@ -56,7 +56,7 @@ func TestServeHTTP(t *testing.T) {
 			path:           "/",
 			expectedStatus: http.StatusOK,
 			setupMock: func() {
-				latestVersion, _ := version.ParseVersion("24.1.0-ui.1")
+				latestVersion, _ := version.ParseVersion("24.1.0+ui.1")
 				mockBM.EXPECT().GetLatestPatchVersion(gomock.Any(), "24.1").Return(latestVersion, nil)
 				mockBM.EXPECT().DownloadPatchVersion(gomock.Any(), latestVersion).Return(createMockTarGz("index.html", "<html>Latest Version</html>"), nil)
 			},
