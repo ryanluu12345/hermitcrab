@@ -18,6 +18,7 @@ env:
 
 jobs:
   release-ui:
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -38,10 +39,9 @@ jobs:
         echo "yo" > "./artifacts/test-item-${{ github.event.inputs.version }}.txt"
 
     - name: 'auth'
-      uses: 'google-github-actions/auth@v1'
+      uses: 'google-github-actions/auth@v2'
       with:
-        workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
-        service_account: "${{ vars.GCP_SERVICE_ACCOUNT }}"
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
     # TODO: you want to update this to use the new code that will be used to manage the version manifest.
     #- name: Pull the versions text file from GCP
