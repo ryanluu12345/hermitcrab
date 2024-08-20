@@ -1,6 +1,7 @@
 package versions
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
@@ -11,9 +12,50 @@ import (
 )
 
 type Version struct {
-	*semver.Version
-	BuildNumber int
-	FileName    string
+	*semver.Version `json:"-"`
+	SemVersion      string `json:"version"`
+	BuildNumber     int    `json:"build_number"`
+	FilePath        string `json:"filename"`
+}
+
+func (v *Version) MarshalJSON() ([]byte, error) {
+	type Alias struct {
+		SemVersion  string `json:"version"`
+		BuildNumber int    `json:"build_number"`
+		FilePath    string `json:"filename"`
+	}
+
+	aux := &Alias{
+		SemVersion:  v.SemVersion,
+		BuildNumber: v.BuildNumber,
+		FilePath:    v.FilePath,
+	}
+
+	return json.Marshal(aux)
+}
+
+func (v *Version) UnmarshalJSON(data []byte) error {
+	type Alias struct {
+		SemVersion  string `json:"version"`
+		BuildNumber int    `json:"build_number"`
+		FilePath    string `json:"filename"`
+	}
+
+	aux := &Alias{}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	v.SemVersion = aux.SemVersion
+	v.BuildNumber = aux.BuildNumber
+	v.FilePath = aux.FilePath
+	ver, err := ParseFileName(v.FilePath)
+	if err != nil {
+		return err
+	}
+	v.Version = ver.Version
+
+	return nil
 }
 
 var trimPatterns = []string{"tar.gz", "tar.zst"}
@@ -68,7 +110,8 @@ func ParseFileName(filePath string) (*Version, error) {
 
 	return &Version{
 		Version:     v,
-		FileName:    filePath,
+		SemVersion:  v.String(),
+		FilePath:    filePath,
 		BuildNumber: buildNum,
 	}, err
 }

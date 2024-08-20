@@ -148,8 +148,8 @@ func TestParseFileName(t *testing.T) {
 				require.EqualError(t, err, tt.wantErr.Error())
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.want.filename, got.FileName)
-				require.Equal(t, tt.want.version, got.Version.String())
+				require.Equal(t, tt.want.filename, got.FilePath)
+				require.Equal(t, tt.want.version, got.SemVersion)
 				require.Equal(t, tt.want.prerelease, got.Prerelease())
 				require.Equal(t, tt.want.buildNumber, got.BuildNumber)
 			}
