@@ -8,7 +8,7 @@
   "versions": [
     {
       "version": "1.0.0",
-      "build_number": 0,
+      "build_number": 1,
       "filename": "/path/to/1.0.0.tar.gz"
     },
     {

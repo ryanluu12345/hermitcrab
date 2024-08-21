@@ -2,7 +2,9 @@ package versions
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"sort"
 )
 
 type Manifest struct {
@@ -43,3 +45,54 @@ func ParseManifestFromFile(filename string) (*Manifest, error) {
 
 	return &manifest, nil
 }
+
+func (m *Manifest) AddNewVersionFromFilePath(filePath string) ([]Version, error) {
+	version, err := ParseFileName(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.AddNewVersion(*version), nil
+}
+
+func (m *Manifest) AddNewVersion(version Version) []Version {
+	m.Versions = append(m.Versions, version)
+	return m.Versions
+}
+
+func (m *Manifest) DeduplicateVersions() []Version {
+	seen := map[string]struct{}{}
+	deduplicatedVersions := []Version{}
+
+	for _, ver := range m.Versions {
+		uniqueKey := fmt.Sprintf("%s-%d", ver.SemVersion, ver.BuildNumber)
+		if _, ok := seen[uniqueKey]; !ok {
+			deduplicatedVersions = append(deduplicatedVersions, ver)
+		} else {
+			continue
+		}
+
+		seen[uniqueKey] = struct{}{}
+	}
+
+	m.Versions = deduplicatedVersions
+	return m.Versions
+}
+
+func (m *Manifest) SortVersions() []Version {
+	versions := Versions(m.Versions)
+	sort.Sort(versions)
+	m.Versions = []Version(versions)
+	return m.Versions
+}
+
+func (m *Manifest) GetLatestVersion() *Version {
+	if len(m.Versions) == 0 {
+		return nil
+	}
+	m.SortVersions()
+	return &m.Versions[len(m.Versions)-1]
+}
+
+// TODO: implement functions for:
+// 4. Helper method that does the creation of manifest.

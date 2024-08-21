@@ -11,11 +11,35 @@ import (
 	semver "github.com/Masterminds/semver/v3"
 )
 
+type Versions []Version
+
 type Version struct {
 	*semver.Version `json:"-"`
 	SemVersion      string `json:"version"`
 	BuildNumber     int    `json:"build_number"`
 	FilePath        string `json:"filename"`
+}
+
+// Implement sort interface
+// Len returns the length of a collection. The number of Version instances
+// on the slice.
+func (v Versions) Len() int {
+	return len(v)
+}
+
+// Less is needed for the sort interface to compare two Version objects on the
+// slice. If checks if one is less than the other.
+func (v Versions) Less(i, j int) bool {
+	if v[i].Version.Equal(v[j].Version) {
+		return v[i].BuildNumber < v[j].BuildNumber
+	}
+	return v[i].Version.LessThan(v[j].Version)
+}
+
+// Swap is needed for the sort interface to replace the Version objects
+// at two different positions in the slice.
+func (c Versions) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
 }
 
 func (v *Version) MarshalJSON() ([]byte, error) {
