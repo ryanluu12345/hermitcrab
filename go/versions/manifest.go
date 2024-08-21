@@ -94,5 +94,30 @@ func (m *Manifest) GetLatestVersion() *Version {
 	return &m.Versions[len(m.Versions)-1]
 }
 
-// TODO: implement functions for:
-// 4. Helper method that does the creation of manifest.
+const skeletonManifest = "../testdata/base-no-versions.json"
+const defaultManifest = "../testdata/base-versions.json"
+const defaultOutput = "../testdata/output.json"
+
+func AddNewVersionToManifest(
+	prevManifestPath string, outputPath string, newVersionPath string,
+) error {
+	manifest, err := ParseManifestFromFile(prevManifestPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = manifest.AddNewVersionFromFilePath(newVersionPath)
+	if err != nil {
+		return err
+	}
+
+	manifest.DeduplicateVersions()
+	manifest.SortVersions()
+
+	err = WriteManifestToFile(*manifest, outputPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

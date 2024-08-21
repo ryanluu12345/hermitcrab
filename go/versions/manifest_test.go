@@ -612,3 +612,17 @@ func TestGetLatestVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestAddNewVersionToManifest(t *testing.T) {
+	err := AddNewVersionToManifest(skeletonManifest, defaultOutput, "/path/to/molt-v1.0.1-beta+3")
+	require.NoError(t, err)
+
+	err = AddNewVersionToManifest(defaultManifest, "../testdata/output-more-versions.json", "/path/to/molt-v1.0.1-beta+3")
+	require.NoError(t, err)
+
+	err = AddNewVersionToManifest(defaultManifest, "../testdata/output-out-of-order.json", "/path/to/molt-v1.0.0-beta+3")
+	require.NoError(t, err)
+
+	err = AddNewVersionToManifest("failed-path", defaultOutput, "/path/to/molt-v1.0.1-beta+3")
+	require.EqualError(t, err, "open failed-path: no such file or directory")
+}

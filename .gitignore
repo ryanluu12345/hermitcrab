@@ -2,3 +2,4 @@ go/cache/
 ts/node_modules/
 ts/dist/
 key.json
+artifacts/
