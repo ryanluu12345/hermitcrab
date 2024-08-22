@@ -156,3 +156,46 @@ func TestParseFileName(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateVersion(t *testing.T) {
+	type args struct {
+		version string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "valid version",
+			args: args{
+				version: "24.1.5-beta+100",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid version path",
+			args: args{
+				version: "https://gcs.com/molt-24.1.5-ui+1",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "invalid version",
+			args: args{
+				version: "invalid--version",
+			},
+			wantErr: errors.New("no semantic version found in filename"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateVersion(tt.args.version)
+			if tt.wantErr != nil {
+				require.EqualError(t, err, tt.wantErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

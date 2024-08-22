@@ -139,3 +139,26 @@ func ParseFileName(filePath string) (*Version, error) {
 		BuildNumber: buildNum,
 	}, err
 }
+
+func ValidateVersion(version string) error {
+	fileName := path.Base(version)
+	semVer, err := parseSemanticVersion(fileName)
+	if err != nil {
+		return err
+	}
+
+	// Trim the file extensions, if relevant.
+	// We want to remove the file information because
+	// in can mess up how the version presents as.
+	for _, pattern := range trimPatterns {
+		semVer = strings.TrimRight(semVer, pattern)
+	}
+
+	ver, err := semver.NewVersion(semVer)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("validated version: %s\n", ver.String())
+	return nil
+}
