@@ -7,9 +7,19 @@
   },
   "versions": [
     {
-      "version": "1.0.1-beta+3",
-      "build_number": 3,
-      "filename": "/path/to/molt-v1.0.1-beta+3"
+      "version": "1.0.0",
+      "build_number": 1,
+      "filename": "/path/to/1.0.0.tar.gz"
+    },
+    {
+      "version": "1.0.1",
+      "build_number": 2,
+      "filename": "/path/to/molt-v1.0.1-beta+2"
+    },
+    {
+      "version": "1.4.5-ui+100",
+      "build_number": 100,
+      "filename": "https://best.com/molt-v1.4.5-ui+100"
     }
   ]
 }
