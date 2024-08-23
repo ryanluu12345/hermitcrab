@@ -20,7 +20,7 @@ on:
       artifacts_dir:
           description: 'The artifacts directory to upload'
           required: true
-          default: 'artifacts'
+          default: 'artifacts/outputs'
   
 
 env:
@@ -40,22 +40,30 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
+
+    - name: Install pnpm 
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: false
+
+    - name: Install npm dependencies
+      run: cd demo-app && pnpm install
+
     - name: Clean and create release directory
       run: rm -rf ./artifacts && mkdir -p artifacts
-    - name: Build for all OS and architecture combinations using tag # When triggered by a release.
+    - name: Build UI
       # Fake this for now.
       run: |
-        mkdir -p ./artifacts
-        mkdir -p ./test
-        echo "yo" > "./artifacts/test-item-${{ github.event.inputs.version }}.txt"
-        echo "test" > "./test/test-item-${{ github.event.inputs.version }}.txt"
+        mkdir -p ./artifacts/ui
+        mkdir -p ./artifacts/outputs
+        ./scripts/build-ui.sh "${{ github.event.inputs.project }}" "${{ github.event.inputs.project }}" "${{ github.event.inputs.version }}"
 
     - name: 'auth'
       uses: 'google-github-actions/auth@v2'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
-    # TODO: you want to update this to use the new code that will be used to manage the version manifest.
     #- name: Pull the versions text file from GCP
     #  run: | 
     #    curl --fail-with-body -o versions.txt -s 'https://molt.cockroachdb.com/molt/cli/versions.txt' || cp ./climanifest/base-versions.txt versions.txt
@@ -74,10 +82,11 @@ jobs:
     #    cp versions.txt ./artifacts/versions.txt
     #    cat ./artifacts/versions.txt
 
-    # TODO: write something new for this
-    #- name: Generate the manifest
-    #  if: ${{ github.event_name == 'release' }}
-    #  run: go run ./climanifest --version-file ./artifacts/versions.txt --output-file ./artifacts/versions.html --template-file "./climanifest/climanifestHtml.tmpl" --title "MOLT Tools CLI Versions"
+    - name: Generate the manifest
+      # TODO: update this so that it uses the downloaded manifest from cloud storage.
+      run: |
+        file=$(ls artifacts/outputs | tail -1)
+        cd go && go run ./cmd versions add -p "./testdata/base-versions.json" -o "../artifacts/outputs/manifest.json"  -v "${{ vars.BUCKET_URL }}/${{ github.event.inputs.project }}/$file"
     - name: Upload binaries and manifest to GCP bucket
       id: 'upload-binaries'
       uses: google-github-actions/upload-cloud-storage@v1
@@ -90,7 +99,7 @@ jobs:
     - name: Output links
       run: |
         echo "CLI Binaries" >> $GITHUB_STEP_SUMMARY
-        for i in $(ls artifacts); do 
+        for i in $(ls ${{ github.event.inputs.artifacts_dir }}); do 
           echo "${{ vars.BUCKET_URL }}/${{ github.event.inputs.project }}/$i" >> $GITHUB_STEP_SUMMARY
         done
     # Needed for invalidate step.
